@@ -1,10 +1,12 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
-from attr import define, field
+from attr import define, field, Factory
 from griptape.tools import BaseTool
 from griptape.memory.structure import Run
 from griptape.structures import Structure
 from griptape.tasks import PromptTask, ToolkitTask
+from griptape.drivers import BasePromptDriver, BaseEmbeddingDriver
+from griptape.config import BaseStructureConfig
 
 if TYPE_CHECKING:
     from griptape.tasks import BaseTask
@@ -15,6 +17,12 @@ class Agent(Structure):
     input_template: str = field(default=PromptTask.DEFAULT_INPUT_TEMPLATE)
     tools: list[BaseTool] = field(factory=list, kw_only=True)
     max_meta_memory_entries: Optional[int] = field(default=20, kw_only=True)
+    stream: Optional[bool] = field(default=None, kw_only=True)
+    prompt_driver: Optional[BasePromptDriver] = field(default=None)
+    embedding_driver: Optional[BaseEmbeddingDriver] = field(default=None, kw_only=True)
+    config: BaseStructureConfig = field(
+        default=Factory(lambda self: self.default_config, takes_self=True), kw_only=True
+    )
 
     def __attrs_post_init__(self) -> None:
         super().__attrs_post_init__()
@@ -31,6 +39,18 @@ class Agent(Structure):
     @property
     def task(self) -> BaseTask:
         return self.tasks[0]
+
+    @prompt_driver.validator  # pyright: ignore
+    def validate_prompt_driver(self, attribute, value):
+        pass
+
+    @embedding_driver.validator  # pyright: ignore
+    def validate_embedding_driver(self, attribute, value):
+        pass
+
+    @stream.validator  # pyright: ignore
+    def validate_stream(self, attribute, value):
+        pass
 
     def add_task(self, task: BaseTask) -> BaseTask:
         self.tasks.clear()
